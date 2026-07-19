@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Finn — designer, deeply human</title>
+  <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+</head>
+<body>
+  <main class="hero">
+    <div class="figure" aria-hidden="true">
+      <canvas id="layer-silhouette" class="pixel-layer always-on"></canvas>
+    </div>
+
+    <section class="prose">
+      <p class="greeting">Hi, I&rsquo;m Finn,</p>
+      <p>
+        UK born US based <span class="dim">designer,</span><br>
+        with a background in AI-powered SaaS and<br>
+        agentic systems, <span class="dim">blending AI with</span> thoughtful<br>
+        design to create &amp; ship digital experiences<br>
+        that are <span class="dim">intelligent</span> but
+        <span class="dim">deeply&nbsp;human</span>.
+      </p>
+    </section>
+  </main>
+
+  {{ layers|json_script:'layers-data' }}
+  <script src="{% static 'core/js/main.js' %}"></script>
+</body>
+</html>

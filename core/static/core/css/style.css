@@ -1,0 +1,192 @@
+:root {
+  --bg: #e9e9e9;
+  --ink: #111114;
+  --dim: #b9b9bd;
+  --nervous: #2d4ada;
+  --circulatory: #e23a3a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hero {
+  min-height: 100vh;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 6vh 6vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(3rem, 8vw, 9rem);
+}
+
+/* --- pixel figure -------------------------------------------------------- */
+
+.figure {
+  position: relative;
+  flex: 0 1 clamp(260px, 30vw, 440px);
+  aspect-ratio: 2 / 3;
+}
+
+.pixel-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+.pixel-layer.always-on {
+  opacity: 1;
+}
+
+.pixel-layer.active {
+  opacity: 1;
+}
+
+/* --- prose ---------------------------------------------------------------- */
+
+.prose {
+  flex: 0 1 620px;
+  font-size: clamp(1.15rem, 1.9vw, 1.7rem);
+  line-height: 1.55;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.prose p {
+  margin: 0 0 1.4em;
+}
+
+.greeting {
+  font-size: 1.05em;
+}
+
+.dim {
+  color: var(--dim);
+}
+
+/* keyword buttons inside the prose mirror the layer state */
+.keyword {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--dim);
+  cursor: pointer;
+  transition: color 0.3s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.keyword:hover {
+  color: var(--ink);
+}
+
+.keyword.active[data-layer="nervous"] {
+  color: var(--nervous);
+}
+
+.keyword.active[data-layer="circulatory"] {
+  color: var(--circulatory);
+}
+
+/* --- toggle buttons -------------------------------------------------------- */
+
+.controls {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin-top: 2.2rem;
+}
+
+.toggle {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  font: inherit;
+  font-size: 0.72em;
+  font-weight: 600;
+  padding: 0.55em 1.15em;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color 0.25s ease, border-color 0.25s ease,
+    color 0.25s ease, transform 0.15s ease;
+}
+
+.toggle:hover {
+  transform: translateY(-1px);
+}
+
+.toggle .dot {
+  width: 0.62em;
+  height: 0.62em;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.toggle-nervous {
+  border-color: var(--nervous);
+  color: var(--nervous);
+}
+
+.toggle-circulatory {
+  border-color: var(--circulatory);
+  color: var(--circulatory);
+}
+
+.toggle-nervous.active {
+  background: var(--nervous);
+  color: #fff;
+}
+
+.toggle-circulatory.active {
+  background: var(--circulatory);
+  color: #fff;
+}
+
+.hint {
+  margin-top: 1.2rem;
+  font-size: 0.55em;
+  font-weight: 500;
+  color: var(--dim);
+}
+
+/* --- responsive ------------------------------------------------------------- */
+
+@media (max-width: 860px) {
+  .hero {
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 3rem;
+    padding-top: 8vh;
+  }
+
+  .figure {
+    flex-basis: auto;
+    width: min(70vw, 320px);
+  }
+}

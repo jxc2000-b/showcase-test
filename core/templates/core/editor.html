@@ -1,0 +1,529 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pixel editor — test area</title>
+  <style>
+    :root {
+      --bg: #17171a;
+      --panel: #1f1f24;
+      --panel-border: #2c2c33;
+      --ink: #e8e8ea;
+      --dim: #8b8b93;
+      --accent: #2d4ada;
+      --cell-off: #232329;
+      --cell-on: #f0f0f2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 14px;
+    }
+    .wrap {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+    }
+    .panel {
+      flex: 0 0 250px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 18px;
+      position: sticky;
+      top: 20px;
+    }
+    .panel h1 {
+      font-size: 15px;
+      margin: 0 0 4px;
+    }
+    .panel .sub {
+      color: var(--dim);
+      font-size: 12px;
+      margin: 0 0 16px;
+    }
+    .group { margin-bottom: 16px; }
+    .group label {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--dim);
+      margin-bottom: 6px;
+    }
+    .row { display: flex; gap: 6px; flex-wrap: wrap; }
+    button, select {
+      font: inherit;
+      color: var(--ink);
+      background: #2a2a31;
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 7px 11px;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    button:hover, select:hover { background: #33333b; }
+    button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    button.primary:hover { filter: brightness(1.12); }
+    button:disabled { opacity: 0.4; cursor: default; }
+    .stat { color: var(--dim); font-size: 12px; }
+    #status { font-size: 12px; min-height: 1.2em; margin-top: 4px; }
+    #status.ok { color: #6fdc8c; }
+    #status.err { color: #ff7a7a; }
+    textarea {
+      width: 100%;
+      height: 110px;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 9px;
+      line-height: 1.1;
+      color: var(--dim);
+      background: #141417;
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 8px;
+      resize: vertical;
+    }
+    .stage { flex: 1 1 auto; text-align: center; }
+    canvas {
+      background: var(--cell-off);
+      border: 1px solid var(--panel-border);
+      border-radius: 4px;
+      cursor: crosshair;
+      touch-action: none;
+      image-rendering: pixelated;
+    }
+    kbd {
+      background: #2a2a31;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 11px;
+      border: 1px solid var(--panel-border);
+    }
+    .keys { color: var(--dim); font-size: 12px; line-height: 2; }
+    @media (max-width: 900px) {
+      .wrap { flex-direction: column; }
+      .panel { position: static; flex-basis: auto; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <aside class="panel">
+      <h1>Pixel editor</h1>
+      <p class="sub">{{ width }}&times;{{ height }} grid &middot; test area, does not touch the live page</p>
+
+      <div class="group">
+        <label>Tool</label>
+        <div class="row">
+          <button id="tool-brush" class="on" type="button">Brush <kbd>b</kbd></button>
+          <button id="tool-erase" type="button">Eraser <kbd>e</kbd></button>
+        </div>
+      </div>
+
+      <div class="group">
+        <label>Brush size</label>
+        <div class="row">
+          <select id="brush-size">
+            <option value="1" selected>1 px</option>
+            <option value="2">2 px</option>
+            <option value="3">3 px</option>
+          </select>
+          <button id="toggle-grid" class="on" type="button" title="gridlines">Grid <kbd>g</kbd></button>
+        </div>
+      </div>
+
+      <div class="group">
+        <label>History</label>
+        <div class="row">
+          <button id="undo" type="button">Undo <kbd>ctrl+z</kbd></button>
+          <button id="redo" type="button">Redo <kbd>ctrl+y</kbd></button>
+        </div>
+      </div>
+
+      <div class="group">
+        <label>Canvas</label>
+        <div class="row">
+          <button id="load-generated" type="button" title="current silhouette (96×144)">Load base</button>
+          <button id="clear" type="button">Clear</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <label>Export</label>
+        <div class="row">
+          <button id="copy" type="button">Copy rows</button>
+          <button id="download" type="button">Download .txt</button>
+          <button id="save" class="primary" type="button">Save to server</button>
+        </div>
+        <p id="status"></p>
+        <p class="stat"><span id="lit-count">0</span> / {{ width }}&times;{{ height }} px lit</p>
+      </div>
+
+      <div class="group">
+        <label>Rows (live)</label>
+        <textarea id="rows-out" readonly spellcheck="false"></textarea>
+      </div>
+
+      <p class="keys">
+        drag&nbsp;=&nbsp;paint &middot; right-drag / <kbd>shift</kbd>&nbsp;=&nbsp;erase<br>
+        <kbd>ctrl+z</kbd> undo &middot; <kbd>ctrl+y</kbd> redo
+      </p>
+    </aside>
+
+    <div class="stage">
+      <canvas id="board"></canvas>
+    </div>
+  </div>
+
+  {{ generated_silhouette|json_script:"generated-silhouette" }}
+
+  <script>
+  (function () {
+    "use strict";
+
+    var W = {{ width }}, H = {{ height }}, CELL = 6;
+    var canvas = document.getElementById("board");
+    canvas.width = W * CELL;
+    canvas.height = H * CELL;
+    var ctx = canvas.getContext("2d");
+
+    var state = new Uint8Array(W * H);       // 1 = lit
+    var tool = "brush";                       // brush | erase
+    var brushSize = 1;
+    var showGrid = true;
+    var painting = false;
+    var paintValue = 1;
+    var lastCell = null;
+    var hoverCell = null;
+
+    var undoStack = [];
+    var redoStack = [];
+
+    var els = {
+      brush: document.getElementById("tool-brush"),
+      erase: document.getElementById("tool-erase"),
+      size: document.getElementById("brush-size"),
+      grid: document.getElementById("toggle-grid"),
+      undo: document.getElementById("undo"),
+      redo: document.getElementById("redo"),
+      loadGen: document.getElementById("load-generated"),
+      clear: document.getElementById("clear"),
+      copy: document.getElementById("copy"),
+      download: document.getElementById("download"),
+      save: document.getElementById("save"),
+      status: document.getElementById("status"),
+      lit: document.getElementById("lit-count"),
+      out: document.getElementById("rows-out"),
+    };
+
+    // ---------------------------------------------------------------- state
+
+    function rows() {
+      var out = [];
+      for (var y = 0; y < H; y++) {
+        var s = "";
+        for (var x = 0; x < W; x++) s += state[y * W + x] ? "#" : ".";
+        out.push(s);
+      }
+      return out;
+    }
+
+    function loadRows(r) {
+      state.fill(0);
+      for (var y = 0; y < Math.min(H, r.length); y++) {
+        for (var x = 0; x < Math.min(W, r[y].length); x++) {
+          if (r[y][x] === "#") state[y * W + x] = 1;
+        }
+      }
+      afterChange();
+    }
+
+    function loadGenerated() {
+      var gen = JSON.parse(
+        document.getElementById("generated-silhouette").textContent
+      );
+      pushUndo();
+      loadRows(gen);   // base silhouette is already at editor grid size
+      setStatus("base silhouette loaded", "ok");
+    }
+
+    function pushUndo() {
+      undoStack.push(state.slice());
+      if (undoStack.length > 100) undoStack.shift();
+      redoStack.length = 0;
+      syncHistoryButtons();
+    }
+
+    function undo() {
+      if (!undoStack.length) return;
+      redoStack.push(state.slice());
+      state = undoStack.pop();
+      afterChange();
+      syncHistoryButtons();
+    }
+
+    function redo() {
+      if (!redoStack.length) return;
+      undoStack.push(state.slice());
+      state = redoStack.pop();
+      afterChange();
+      syncHistoryButtons();
+    }
+
+    function syncHistoryButtons() {
+      els.undo.disabled = !undoStack.length;
+      els.redo.disabled = !redoStack.length;
+    }
+
+    function afterChange() {
+      redraw();
+      var r = rows();
+      els.out.value = r.join("\n");
+      var lit = 0;
+      for (var i = 0; i < state.length; i++) lit += state[i];
+      els.lit.textContent = lit.toLocaleString();
+      try {
+        localStorage.setItem("pixel-editor-rows", JSON.stringify(r));
+      } catch (e) { /* storage unavailable — fine */ }
+    }
+
+    function setStatus(msg, cls) {
+      els.status.textContent = msg;
+      els.status.className = cls || "";
+    }
+
+    // ---------------------------------------------------------------- paint
+
+    function cellFromEvent(e) {
+      var rect = canvas.getBoundingClientRect();
+      return [
+        Math.floor((e.clientX - rect.left) / CELL),
+        Math.floor((e.clientY - rect.top) / CELL),
+      ];
+    }
+
+    function paintAt(cx, cy) {
+      var half = Math.floor(brushSize / 2);
+      for (var dy = 0; dy < brushSize; dy++) {
+        for (var dx = 0; dx < brushSize; dx++) {
+          var x = cx + dx - half, y = cy + dy - half;
+          if (x >= 0 && x < W && y >= 0 && y < H) state[y * W + x] = paintValue;
+        }
+      }
+    }
+
+    // bresenham so fast drags don't skip cells
+    function paintLine(x0, y0, x1, y1) {
+      var dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0);
+      var sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+      var err = dx + dy;
+      for (;;) {
+        paintAt(x0, y0);
+        if (x0 === x1 && y0 === y1) break;
+        var e2 = 2 * err;
+        if (e2 >= dy) { err += dy; x0 += sx; }
+        if (e2 <= dx) { err += dx; y0 += sy; }
+      }
+    }
+
+    canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+
+    canvas.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+      canvas.setPointerCapture(e.pointerId);
+      pushUndo();
+      paintValue =
+        e.button === 2 || e.shiftKey || tool === "erase" ? 0 : 1;
+      var c = cellFromEvent(e);
+      paintAt(c[0], c[1]);
+      lastCell = c;
+      painting = true;
+      redraw();
+    });
+
+    canvas.addEventListener("pointermove", function (e) {
+      var c = cellFromEvent(e);
+      hoverCell = c;
+      if (painting && (c[0] !== lastCell[0] || c[1] !== lastCell[1])) {
+        paintLine(lastCell[0], lastCell[1], c[0], c[1]);
+        lastCell = c;
+      }
+      redraw();
+    });
+
+    function endStroke() {
+      if (painting) {
+        painting = false;
+        afterChange();
+      }
+    }
+    canvas.addEventListener("pointerup", endStroke);
+    canvas.addEventListener("pointercancel", endStroke);
+    canvas.addEventListener("pointerleave", function () {
+      hoverCell = null;
+      redraw();
+    });
+
+    // ---------------------------------------------------------------- draw
+
+    function redraw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#232329";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#f0f0f2";
+      for (var y = 0; y < H; y++) {
+        for (var x = 0; x < W; x++) {
+          if (state[y * W + x]) ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+        }
+      }
+
+      if (showGrid) {
+        ctx.strokeStyle = "rgba(255,255,255,0.05)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (var gx = 1; gx < W; gx++) {
+          ctx.moveTo(gx * CELL + 0.5, 0);
+          ctx.lineTo(gx * CELL + 0.5, canvas.height);
+        }
+        for (var gy = 1; gy < H; gy++) {
+          ctx.moveTo(0, gy * CELL + 0.5);
+          ctx.lineTo(canvas.width, gy * CELL + 0.5);
+        }
+        ctx.stroke();
+      }
+
+      if (hoverCell && !painting) {
+        var hx = hoverCell[0], hy = hoverCell[1];
+        if (hx >= 0 && hx < W && hy >= 0 && hy < H) {
+          ctx.strokeStyle = "#2d4ada";
+          ctx.lineWidth = 2;
+          var half = Math.floor(brushSize / 2);
+          ctx.strokeRect(
+            (hx - half) * CELL + 1,
+            (hy - half) * CELL + 1,
+            brushSize * CELL - 2,
+            brushSize * CELL - 2
+          );
+        }
+      }
+    }
+
+    // ---------------------------------------------------------------- tools
+
+    function setTool(t) {
+      tool = t;
+      els.brush.classList.toggle("on", t === "brush");
+      els.erase.classList.toggle("on", t === "erase");
+    }
+
+    els.brush.addEventListener("click", function () { setTool("brush"); });
+    els.erase.addEventListener("click", function () { setTool("erase"); });
+    els.size.addEventListener("change", function () {
+      brushSize = parseInt(els.size.value, 10);
+    });
+    els.grid.addEventListener("click", function () {
+      showGrid = !showGrid;
+      els.grid.classList.toggle("on", showGrid);
+      redraw();
+    });
+    els.undo.addEventListener("click", undo);
+    els.redo.addEventListener("click", redo);
+    els.loadGen.addEventListener("click", loadGenerated);
+    els.clear.addEventListener("click", function () {
+      if (!window.confirm("Clear the canvas?")) return;
+      pushUndo();
+      state.fill(0);
+      afterChange();
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+      var k = e.key.toLowerCase();
+      if ((e.ctrlKey || e.metaKey) && k === "z" && !e.shiftKey) {
+        e.preventDefault(); undo();
+      } else if ((e.ctrlKey || e.metaKey) && (k === "y" || (k === "z" && e.shiftKey))) {
+        e.preventDefault(); redo();
+      } else if (k === "b") setTool("brush");
+      else if (k === "e") setTool("erase");
+      else if (k === "g") els.grid.click();
+    });
+
+    // ---------------------------------------------------------------- export
+
+    els.copy.addEventListener("click", function () {
+      navigator.clipboard.writeText(rows().join("\n")).then(
+        function () { setStatus("rows copied to clipboard", "ok"); },
+        function () { setStatus("copy failed — select the textarea manually", "err"); }
+      );
+    });
+
+    els.download.addEventListener("click", function () {
+      var blob = new Blob([rows().join("\n") + "\n"], { type: "text/plain" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "silhouette_" + W + "x" + H + ".txt";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    function getCookie(name) {
+      var m = document.cookie.match("(?:^|; )" + name + "=([^;]*)");
+      return m ? decodeURIComponent(m[1]) : "";
+    }
+
+    els.save.addEventListener("click", function () {
+      setStatus("saving…");
+      fetch("{% url 'save-silhouette' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
+        },
+        body: JSON.stringify({ rows: rows() }),
+      })
+        .then(function (r) { return r.json().then(function (j) { return [r.status, j]; }); })
+        .then(function (res) {
+          var status = res[0], body = res[1];
+          if (status === 200 && body.ok) {
+            setStatus("saved " + body.lit.toLocaleString() + " px → " + body.path, "ok");
+          } else {
+            setStatus("save failed: " + (body.error || status), "err");
+          }
+        })
+        .catch(function (err) { setStatus("save failed: " + err, "err"); });
+    });
+
+    // ---------------------------------------------------------------- boot
+
+    (function boot() {
+      var saved = null;
+      try { saved = localStorage.getItem("pixel-editor-rows"); } catch (e) {}
+      if (saved) {
+        try {
+          var r = JSON.parse(saved);
+          if (Array.isArray(r) && r.length === H && r[0].length === W) {
+            loadRows(r);
+            setStatus("restored autosave from this browser", "ok");
+            return;
+          }
+        } catch (e) {}
+      }
+      loadGenerated();   // first visit: start from the accurate silhouette
+      undoStack.length = 0;   // loading the base is not undoable
+      syncHistoryButtons();
+    })();
+  })();
+  </script>
+</body>
+</html>
