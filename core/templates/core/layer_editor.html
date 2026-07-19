@@ -14,6 +14,7 @@
       --dim: #8b8b93;
       --nervous: #2d4ada;
       --circulatory: #e23a3a;
+      --skeletal: #4a4a52;
     }
     * { box-sizing: border-box; }
     body {
@@ -67,9 +68,11 @@
     button.on { color: #fff; }
     button.on[data-layer-name="nervous"] { background: var(--nervous); border-color: var(--nervous); }
     button.on[data-layer-name="circulatory"] { background: var(--circulatory); border-color: var(--circulatory); }
+    button.on[data-layer-name="skeletal"] { background: var(--skeletal); border-color: var(--skeletal); }
     button.primary { color: #fff; }
     button.primary[data-layer-name="nervous"] { background: var(--nervous); border-color: var(--nervous); }
     button.primary[data-layer-name="circulatory"] { background: var(--circulatory); border-color: var(--circulatory); }
+    button.primary[data-layer-name="skeletal"] { background: var(--skeletal); border-color: var(--skeletal); }
     button:disabled { opacity: 0.4; cursor: default; }
     .stat { color: var(--dim); font-size: 12px; }
     #status { font-size: 12px; min-height: 1.2em; margin-top: 4px; }
@@ -122,6 +125,7 @@
         <div class="row">
           <button type="button" data-layer-name="nervous" class="layer-pick on">Nervous</button>
           <button type="button" data-layer-name="circulatory" class="layer-pick">Circulatory</button>
+          <button type="button" data-layer-name="skeletal" class="layer-pick">Skeletal</button>
         </div>
       </div>
 
@@ -178,7 +182,7 @@
 
       <p class="keys">
         drag&nbsp;=&nbsp;paint &middot; right-drag / <kbd>shift</kbd>&nbsp;=&nbsp;erase<br>
-        <kbd>ctrl+z</kbd> undo &middot; <kbd>ctrl+y</kbd> redo &middot; <kbd>1</kbd>/<kbd>2</kbd> switch layer
+        <kbd>ctrl+z</kbd> undo &middot; <kbd>ctrl+y</kbd> redo &middot; <kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> switch layer
       </p>
     </aside>
 
@@ -198,8 +202,10 @@
     var LAYER_COLORS = {
       nervous: "#2d4ada",
       circulatory: "#e23a3a",
+      skeletal: "#ffffff",
     };
     var SIL_COLOR = "#c7c7cc";
+    var SIL_COLOR_SKELETAL = "#0c0c0e";   // black backdrop while painting bones
     var BG_COLOR = "#f4f4f5";
 
     var canvas = document.getElementById("board");
@@ -225,6 +231,7 @@
     var states = {
       nervous: new Uint8Array(W * H),
       circulatory: new Uint8Array(W * H),
+      skeletal: new Uint8Array(W * H),
     };
     var active = "nervous";
     var tool = "brush";
@@ -423,7 +430,7 @@
       ctx.fillStyle = BG_COLOR;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = SIL_COLOR;
+      ctx.fillStyle = active === "skeletal" ? SIL_COLOR_SKELETAL : SIL_COLOR;
       for (var y = 0; y < H; y++) {
         for (var x = 0; x < W; x++) {
           if (sil[y * W + x]) ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
@@ -511,6 +518,7 @@
       else if (k === "g") els.grid.click();
       else if (k === "1") setActive("nervous");
       else if (k === "2") setActive("circulatory");
+      else if (k === "3") setActive("skeletal");
     });
 
     // ---------------------------------------------------------------- export
@@ -561,7 +569,7 @@
     // ---------------------------------------------------------------- boot
 
     (function boot() {
-      ["nervous", "circulatory"].forEach(function (name) {
+      ["nervous", "circulatory", "skeletal"].forEach(function (name) {
         var restored = null;
         try { restored = localStorage.getItem("layer-editor-" + name); } catch (e) {}
         if (restored) {

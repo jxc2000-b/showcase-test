@@ -8,6 +8,7 @@
     silhouette: "#0c0c0e",
     nervous: "#2d4ada",
     circulatory: "#e23a3a",
+    skeletal: "#ffffff",
   };
 
   var layers = JSON.parse(document.getElementById("layers-data").textContent);
@@ -37,21 +38,21 @@
     }
   });
 
-  // toggle logic: every [data-layer] control flips the same layer
-  function setLayer(name, on) {
-    document
-      .querySelectorAll('[data-layer="' + name + '"]')
-      .forEach(function (el) {
-        el.classList.toggle("active", on);
-        if (el.tagName === "BUTTON") {
-          el.setAttribute("aria-pressed", on ? "true" : "false");
-        }
-      });
+  // exclusive toggle: clicking a button shows only that layer, and clicking
+  // the active button again returns to the bare silhouette (never stacked)
+  function setActive(name) {
+    document.querySelectorAll("[data-layer]").forEach(function (el) {
+      var on = el.dataset.layer === name;
+      el.classList.toggle("active", on);
+      if (el.tagName === "BUTTON") {
+        el.setAttribute("aria-pressed", on ? "true" : "false");
+      }
+    });
   }
 
   document.querySelectorAll("button[data-layer]").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      setLayer(btn.dataset.layer, !btn.classList.contains("active"));
+      setActive(btn.classList.contains("active") ? null : btn.dataset.layer);
     });
   });
 })();

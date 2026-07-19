@@ -3,14 +3,15 @@
 A Django mock-up of a portfolio concept (see `inspo/`): a pixelated human
 silhouette on a hero page. The silhouette comes from `silhouette_custom.json`
 (fine-tuned in the pixel editor; falls back to a 1:1 extraction of
-`inspo/accurate.png`). Nervous/circulatory overlay layers exist
-(`core/pixelart.py`, procedural) but are parked until hand-drawn replacements
-are finished in the layer editor.
+`inspo/accurate.png`). Hand-drawn nervous/circulatory/skeletal overlays
+(`layer_<name>.json`, painted in the layer editor) sit on stacked canvases
+over the silhouette and are toggled one at a time from the buttons under
+the intro paragraph.
 
 Also included: a pixel **editor** at `/editor/` (paint/erase/undo, autosave,
 save-to-server) for fine-tuning the silhouette, an anatomy **layer editor**
-at `/editor/layer/` (locked silhouette backdrop; paint nervous/circulatory
-inside the body; saves `layer_<name>.json`), plus throwaway test renders at
+at `/editor/layer/` (locked silhouette backdrop; paint nervous/circulatory/
+skeletal inside the body; saves `layer_<name>.json`), plus throwaway test renders at
 `/ascii/` and `/accurate/`.
 
 ## Run it

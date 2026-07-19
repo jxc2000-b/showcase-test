@@ -11,6 +11,9 @@
   <main class="hero">
     <div class="figure" aria-hidden="true">
       <canvas id="layer-silhouette" class="pixel-layer always-on"></canvas>
+      <canvas id="layer-nervous" class="pixel-layer" data-layer="nervous"></canvas>
+      <canvas id="layer-circulatory" class="pixel-layer" data-layer="circulatory"></canvas>
+      <canvas id="layer-skeletal" class="pixel-layer" data-layer="skeletal"></canvas>
     </div>
 
     <section class="prose">
@@ -23,6 +26,14 @@
         that are <span class="dim">intelligent</span> but
         <span class="dim">deeply&nbsp;human</span>.
       </p>
+
+      <!-- layer buttons: one overlay at a time, never stacked -->
+      <div class="controls">
+        <button class="toggle toggle-nervous" type="button" data-layer="nervous" aria-pressed="false"><span class="dot"></span>Nervous</button>
+        <button class="toggle toggle-circulatory" type="button" data-layer="circulatory" aria-pressed="false"><span class="dot"></span>Circulatory</button>
+        <button class="toggle toggle-skeletal" type="button" data-layer="skeletal" aria-pressed="false"><span class="dot"></span>Skeletal</button>
+      </div>
+      <p class="hint">One system at a time &mdash; tap again to return to the bare figure.</p>
     </section>
   </main>
 

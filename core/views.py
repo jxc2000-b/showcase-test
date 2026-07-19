@@ -1,3 +1,7 @@
+# The site's request handlers: each function below answers one web address
+# (the homepage, the two editors, the "save" buttons, and the test pages)
+# and decides what to send back to the visitor's browser.
+
 import json
 
 from django.conf import settings
@@ -10,13 +14,18 @@ from .ascii_silhouette import GRID as ASCII_GRID
 from .custom_silhouette import get_grid
 from .png_silhouette import GRID as PNG_GRID
 
+# Size of the pixel grid both editors draw on.
 EDITOR_WIDTH = 96
 EDITOR_HEIGHT = 144   # exactly 2:3, per design requirement
 
+# Where the editors' finished artwork is stored on the server's disk.
 SILHOUETTE_SAVE_PATH = settings.BASE_DIR / 'silhouette_custom.json'
 LAYER_SAVE_DIR = settings.BASE_DIR
-LAYER_NAMES = frozenset({'nervous', 'circulatory'})
+# The only anatomy layers the layer editor is allowed to save.
+LAYER_NAMES = frozenset({'nervous', 'circulatory', 'skeletal'})
 
+# Ground rules for an acceptable grid: cells are only ever '#' (body) or
+# '.' (empty), and the grid may not be huge.
 _VALID_CHARS = frozenset('#.')
 _MAX_DIM = 512
 
@@ -48,9 +57,14 @@ def _read_grid(path):
 
 
 def index(request):
-    # fine-tuned silhouette only; nervous/circulatory layers parked for now
+    # the silhouette plus whichever hand-drawn anatomy layers are on disk
+    layers = {'silhouette': get_grid()}
+    for name in sorted(LAYER_NAMES):
+        rows = _read_grid(LAYER_SAVE_DIR / f'layer_{name}.json')
+        if rows is not None:
+            layers[name] = rows
     return render(request, 'core/index.html', {
-        'layers': {'silhouette': get_grid()},
+        'layers': layers,
     })
 
 

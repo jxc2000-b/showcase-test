@@ -168,6 +168,12 @@ body {
   color: #fff;
 }
 
+/* skeletal keeps the base ink styling; fills black when active */
+.toggle-skeletal.active {
+  background: var(--ink);
+  color: #fff;
+}
+
 .hint {
   margin-top: 1.2rem;
   font-size: 0.55em;

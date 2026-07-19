@@ -44,11 +44,14 @@ class PixelArtTests(SimpleTestCase):
         self.assertContains(response, "layer-silhouette")
         self.assertContains(response, "layers-data")
 
-    def test_index_uses_accurate_grid_without_anatomy_layers(self):
+    def test_index_includes_anatomy_layers(self):
         response = self.client.get("/")
-        self.assertEqual(response.context["layers"], {"silhouette": get_grid()})
-        self.assertNotContains(response, 'data-layer="nervous"')
-        self.assertNotContains(response, 'data-layer="circulatory"')
+        layers = response.context["layers"]
+        self.assertEqual(layers["silhouette"], get_grid())
+        for name in ("nervous", "circulatory", "skeletal"):
+            with self.subTest(layer=name):
+                self.assertIn(name, layers)
+                self.assertContains(response, f'data-layer="{name}"')
 
 
 class EditorTests(SimpleTestCase):
@@ -125,7 +128,7 @@ class LayerEditorTests(SimpleTestCase):
     def test_save_layer_rejects_unknown_name(self):
         response = self.client.post(
             "/editor/layer/save/",
-            data=json.dumps({"name": "skeletal", "rows": ["." * 96] * 144}),
+            data=json.dumps({"name": "muscular", "rows": ["." * 96] * 144}),
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
