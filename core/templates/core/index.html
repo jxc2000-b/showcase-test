@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Finn — designer, deeply human</title>
+  <title>Bryan</title>
   <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
 </head>
 <body>
@@ -19,14 +19,18 @@
     </div>
 
     <section class="prose">
-      <p> this is the prose</p>
+      <!-- the dimmed keywords in this paragraph drive the same layer
+           toggles as the pill buttons below -->
+      <p>
+        My name is Finn, I am a software engineer building and
+        <button class="keyword" type="button" data-layer="nervous" aria-pressed="false">thinking</button>
+        about the future. In my free time I
+        <button class="keyword" type="button" data-layer="skeletal" aria-pressed="false">hike</button>
+        and my
+        <button class="keyword" type="button" data-layer="circulatory" aria-pressed="false">passions</button>
+        are many.
+      </p>
 
-      <!-- layer buttons: combine freely, stacking order is always fixed -->
-      <div class="controls">
-        <button class="toggle toggle-nervous" type="button" data-layer="nervous" aria-pressed="false"><span class="dot"></span>Nervous</button>
-        <button class="toggle toggle-circulatory" type="button" data-layer="circulatory" aria-pressed="false"><span class="dot"></span>Circulatory</button>
-        <button class="toggle toggle-skeletal" type="button" data-layer="skeletal" aria-pressed="false"><span class="dot"></span>Skeletal</button>
-      </div>
       <p class="hint">Combine freely &mdash; they always stack skeleton over circulation over nerves.</p>
     </section>
   </main>

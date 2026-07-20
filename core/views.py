@@ -25,12 +25,20 @@ LAYER_SAVE_DIR = settings.BASE_DIR
 LAYER_NAMES = frozenset({'nervous', 'circulatory', 'skeletal'})
 
 # Ground rules for an acceptable grid: cells are only ever '#' (body) or
-# '.' (empty), and the grid may not be huge.
+# '.' (empty), and the grid may not be huge. The skeletal layer is the one
+# exception: it is two-tone, so it may also contain 'B' (black detail).
 _VALID_CHARS = frozenset('#.')
+_TWO_TONE_CHARS = frozenset('#.B')
 _MAX_DIM = 512
 
 
-def _rows_valid(rows) -> bool:
+def _layer_chars(name):
+    """Characters allowed in a layer grid: skeletal is two-tone ('#'
+    white bone, 'B' black detail); the other layers are '#' only."""
+    return _TWO_TONE_CHARS if name == 'skeletal' else _VALID_CHARS
+
+
+def _rows_valid(rows, valid_chars=_VALID_CHARS) -> bool:
     return (
         isinstance(rows, list)
         and rows
@@ -38,7 +46,7 @@ def _rows_valid(rows) -> bool:
         and all(isinstance(r, str) for r in rows)
         and len({len(r) for r in rows}) == 1
         and len(rows[0]) <= _MAX_DIM
-        and all(set(r) <= _VALID_CHARS for r in rows)
+        and all(set(r) <= valid_chars for r in rows)
     )
 
 
@@ -48,10 +56,10 @@ def _write_grid(path, rows):
     return sum(r.count('#') for r in rows)
 
 
-def _read_grid(path):
+def _read_grid(path, valid_chars=_VALID_CHARS):
     try:
         rows = json.loads(path.read_text())['rows']
-        return rows if _rows_valid(rows) else None
+        return rows if _rows_valid(rows, valid_chars) else None
     except (OSError, ValueError, KeyError):
         return None
 
@@ -60,7 +68,7 @@ def index(request):
     # the silhouette plus whichever hand-drawn anatomy layers are on disk
     layers = {'silhouette': get_grid()}
     for name in sorted(LAYER_NAMES):
-        rows = _read_grid(LAYER_SAVE_DIR / f'layer_{name}.json')
+        rows = _read_grid(LAYER_SAVE_DIR / f'layer_{name}.json', _layer_chars(name))
         if rows is not None:
             layers[name] = rows
     return render(request, 'core/index.html', {
@@ -89,7 +97,9 @@ def layer_editor(request):
         'height': EDITOR_HEIGHT,
         'generated_silhouette': get_grid(),
         'saved_layers': {
-            name: _read_grid(LAYER_SAVE_DIR / f'layer_{name}.json')
+            name: _read_grid(
+                LAYER_SAVE_DIR / f'layer_{name}.json', _layer_chars(name)
+            )
             for name in sorted(LAYER_NAMES)
         },
     })
@@ -123,7 +133,8 @@ def save_layer(request):
 
     if name not in LAYER_NAMES:
         return JsonResponse({'ok': False, 'error': f'name must be one of {sorted(LAYER_NAMES)}'}, status=400)
-    if not _rows_valid(rows):
+    chars = _layer_chars(name)
+    if not _rows_valid(rows, chars):
         return JsonResponse({'ok': False, 'error': 'rows must be an even grid of "#"/"."'}, status=400)
 
     path = LAYER_SAVE_DIR / f'layer_{name}.json'

@@ -1,9 +1,9 @@
 /* layer_editor.js — anatomy layer editor page (/editor/layer/)
  *
  * The same editor idea as editor.js, but painting one of three anatomy
- * layers (nervous / circulatory / skeletal) over a locked silhouette
- * backdrop. Paint is clipped to the body; while the skeletal layer is
- * active the backdrop turns black and the brush paints white. Each layer
+ * layers (nervous / circulatory / skeletal) over a locked grey silhouette
+ * backdrop. Paint is clipped to the body. The skeletal layer is two-tone:
+ * a white brush and a black brush (grid characters '#' and 'B'). Each layer
  * autosaves to the browser; "Save layer" POSTs the active layer to the
  * save endpoint (which writes layer_<name>.json). Grid size and save URL
  * arrive as data-attributes on <canvas id="board">; the silhouette and the
@@ -21,10 +21,11 @@
   var LAYER_COLORS = {
     nervous: "#2d4ada",
     circulatory: "#e23a3a",
-    skeletal: "#ffffff",
   };
+  // skeletal is two-tone: white bone (value 1, grid '#') and black detail
+  // (value 2, grid 'B'), both distinct from the grey backdrop
+  var SKELETAL_COLORS = { 1: "#ffffff", 2: "#0c0c0e" };
   var SIL_COLOR = "#c7c7cc";
-  var SIL_COLOR_SKELETAL = "#0c0c0e";   // black backdrop while painting bones
   var BG_COLOR = "#f4f4f5";
 
   canvas.width = W * CELL;
@@ -52,6 +53,7 @@
     skeletal: new Uint8Array(W * H),
   };
   var active = "nervous";
+  var brushColor = 1;   // skeletal only: 1 = white, 2 = black
   var tool = "brush";
   var brushSize = 1;
   var showGrid = true;
@@ -79,6 +81,8 @@
     lit: document.getElementById("lit-count"),
     silCount: document.getElementById("sil-count"),
     out: document.getElementById("rows-out"),
+    colorGroup: document.getElementById("paint-color"),
+    colorPicks: document.querySelectorAll(".color-pick"),
   };
 
   // ---------------------------------------------------------------- state
@@ -88,7 +92,10 @@
     var out = [];
     for (var y = 0; y < H; y++) {
       var s = "";
-      for (var x = 0; x < W; x++) s += st[y * W + x] ? "#" : ".";
+      for (var x = 0; x < W; x++) {
+        var v = st[y * W + x];
+        s += v === 2 ? "B" : v ? "#" : ".";
+      }
       out.push(s);
     }
     return out;
@@ -99,7 +106,10 @@
     st.fill(0);
     for (var y = 0; y < Math.min(H, r.length); y++) {
       for (var x = 0; x < Math.min(W, r[y].length); x++) {
-        if (r[y][x] === "#" && sil[y * W + x]) st[y * W + x] = 1;
+        var ch = r[y][x];
+        if ((ch === "#" || ch === "B") && sil[y * W + x]) {
+          st[y * W + x] = ch === "B" ? 2 : 1;
+        }
       }
     }
   }
@@ -144,7 +154,7 @@
     els.out.value = r.join("\n");
     var lit = 0;
     var st = states[active];
-    for (var i = 0; i < st.length; i++) lit += st[i];
+    for (var i = 0; i < st.length; i++) lit += st[i] ? 1 : 0;
     els.lit.textContent = lit.toLocaleString();
     persist(active);
   }
@@ -165,7 +175,18 @@
       b.classList.toggle("on", b.dataset.layerName === name);
     });
     els.save.dataset.layerName = name;
+    // the two-colour brush is a skeletal-only tool: reset to white and
+    // hide the swatches on the single-colour layers
+    brushColor = 1;
+    syncColorPicks();
+    els.colorGroup.style.display = name === "skeletal" ? "" : "none";
     afterChange();
+  }
+
+  function syncColorPicks() {
+    els.colorPicks.forEach(function (b) {
+      b.classList.toggle("on", parseInt(b.dataset.color, 10) === brushColor);
+    });
   }
 
   // ---------------------------------------------------------------- paint
@@ -211,7 +232,12 @@
     e.preventDefault();
     canvas.setPointerCapture(e.pointerId);
     pushUndo();
-    paintValue = e.button === 2 || e.shiftKey || tool === "erase" ? 0 : 1;
+    paintValue =
+      e.button === 2 || e.shiftKey || tool === "erase"
+        ? 0
+        : active === "skeletal"
+          ? brushColor
+          : 1;
     var c = cellFromEvent(e);
     paintAt(c[0], c[1]);
     lastCell = c;
@@ -248,18 +274,30 @@
     ctx.fillStyle = BG_COLOR;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = active === "skeletal" ? SIL_COLOR_SKELETAL : SIL_COLOR;
+    ctx.fillStyle = SIL_COLOR;
     for (var y = 0; y < H; y++) {
       for (var x = 0; x < W; x++) {
         if (sil[y * W + x]) ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
       }
     }
 
-    ctx.fillStyle = LAYER_COLORS[active];
     var st = states[active];
-    for (var ly = 0; ly < H; ly++) {
-      for (var lx = 0; lx < W; lx++) {
-        if (st[ly * W + lx]) ctx.fillRect(lx * CELL, ly * CELL, CELL, CELL);
+    if (active === "skeletal") {
+      // two passes: white bone first, black detail overprinted on top
+      [1, 2].forEach(function (v) {
+        ctx.fillStyle = SKELETAL_COLORS[v];
+        for (var ly = 0; ly < H; ly++) {
+          for (var lx = 0; lx < W; lx++) {
+            if (st[ly * W + lx] === v) ctx.fillRect(lx * CELL, ly * CELL, CELL, CELL);
+          }
+        }
+      });
+    } else {
+      ctx.fillStyle = LAYER_COLORS[active];
+      for (var ly = 0; ly < H; ly++) {
+        for (var lx = 0; lx < W; lx++) {
+          if (st[ly * W + lx]) ctx.fillRect(lx * CELL, ly * CELL, CELL, CELL);
+        }
       }
     }
 
@@ -281,7 +319,7 @@
     if (hoverCell && !painting) {
       var hx = hoverCell[0], hy = hoverCell[1];
       if (hx >= 0 && hx < W && hy >= 0 && hy < H) {
-        ctx.strokeStyle = LAYER_COLORS[active];
+        ctx.strokeStyle = active === "skeletal" ? SKELETAL_COLORS[brushColor] : LAYER_COLORS[active];
         ctx.lineWidth = 2;
         var half = Math.floor(brushSize / 2);
         ctx.strokeRect(
@@ -307,6 +345,12 @@
   });
   els.brush.addEventListener("click", function () { setTool("brush"); });
   els.erase.addEventListener("click", function () { setTool("erase"); });
+  els.colorPicks.forEach(function (b) {
+    b.addEventListener("click", function () {
+      brushColor = parseInt(b.dataset.color, 10);
+      syncColorPicks();
+    });
+  });
   els.size.addEventListener("change", function () {
     brushSize = parseInt(els.size.value, 10);
   });
@@ -337,6 +381,10 @@
     else if (k === "1") setActive("nervous");
     else if (k === "2") setActive("circulatory");
     else if (k === "3") setActive("skeletal");
+    else if (k === "x" && active === "skeletal") {
+      brushColor = brushColor === 1 ? 2 : 1;
+      syncColorPicks();
+    }
   });
 
   // ---------------------------------------------------------------- export

@@ -107,6 +107,16 @@
       font-size: 11px;
       border: 1px solid var(--panel-border);
     }
+    .sw {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      margin-right: 6px;
+      border: 1px solid var(--panel-border);
+      vertical-align: -1px;
+    }
+    .color-pick.on { border-color: var(--ink); }
     .keys { color: var(--dim); font-size: 12px; line-height: 2; }
     @media (max-width: 900px) {
       .wrap { flex-direction: column; }
@@ -134,6 +144,15 @@
         <div class="row">
           <button id="tool-brush" class="on" type="button">Brush <kbd>b</kbd></button>
           <button id="tool-erase" type="button">Eraser <kbd>e</kbd></button>
+        </div>
+      </div>
+
+      <!-- skeletal-only: pick which tone the brush paints (x swaps) -->
+      <div class="group" id="paint-color" style="display:none">
+        <label>Bone colour</label>
+        <div class="row">
+          <button type="button" class="color-pick on" data-color="1"><span class="sw" style="background:#ffffff"></span>White</button>
+          <button type="button" class="color-pick" data-color="2"><span class="sw" style="background:#0c0c0e"></span>Black</button>
         </div>
       </div>
 
@@ -182,7 +201,7 @@
 
       <p class="keys">
         drag&nbsp;=&nbsp;paint &middot; right-drag / <kbd>shift</kbd>&nbsp;=&nbsp;erase<br>
-        <kbd>ctrl+z</kbd> undo &middot; <kbd>ctrl+y</kbd> redo &middot; <kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> switch layer
+        <kbd>ctrl+z</kbd> undo &middot; <kbd>ctrl+y</kbd> redo &middot; <kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> switch layer &middot; <kbd>x</kbd> swap bone colour
       </p>
     </aside>
 

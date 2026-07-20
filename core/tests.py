@@ -53,6 +53,15 @@ class PixelArtTests(SimpleTestCase):
                 self.assertIn(name, layers)
                 self.assertContains(response, f'data-layer="{name}"')
 
+    def test_index_serves_two_tone_skeletal(self):
+        rows = ["#" + "." * 94 + "B"] + ["." * 96] * 143
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "layer_skeletal.json"
+            path.write_text(json.dumps({"width": 96, "height": 144, "rows": rows}))
+            with patch("core.views.LAYER_SAVE_DIR", Path(tmp)):
+                response = self.client.get("/")
+        self.assertEqual(response.context["layers"]["skeletal"], rows)
+
 
 class EditorTests(SimpleTestCase):
     def test_editor_page_renders(self):
@@ -124,6 +133,28 @@ class LayerEditorTests(SimpleTestCase):
                 self.assertEqual(response.status_code, 200)
                 saved = json.loads((Path(tmp) / "layer_nervous.json").read_text())
                 self.assertEqual(saved["rows"], rows)
+
+    def test_save_skeletal_accepts_two_tone_rows(self):
+        rows = ["#" + "." * 94 + "B"] + ["." * 96] * 143
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch("core.views.LAYER_SAVE_DIR", Path(tmp)):
+                response = self.client.post(
+                    "/editor/layer/save/",
+                    data=json.dumps({"name": "skeletal", "rows": rows}),
+                    content_type="application/json",
+                )
+                self.assertEqual(response.status_code, 200)
+                saved = json.loads((Path(tmp) / "layer_skeletal.json").read_text())
+                self.assertEqual(saved["rows"], rows)
+
+    def test_save_layer_rejects_black_detail_outside_skeletal(self):
+        rows = ["B" + "." * 95] * 144
+        response = self.client.post(
+            "/editor/layer/save/",
+            data=json.dumps({"name": "nervous", "rows": rows}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
 
     def test_save_layer_rejects_unknown_name(self):
         response = self.client.post(
