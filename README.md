@@ -5,8 +5,9 @@ silhouette on a hero page. The silhouette comes from `silhouette_custom.json`
 (fine-tuned in the pixel editor; falls back to a 1:1 extraction of
 `inspo/accurate.png`). Hand-drawn nervous/circulatory/skeletal overlays
 (`layer_<name>.json`, painted in the layer editor) sit on stacked canvases
-over the silhouette and are toggled one at a time from the buttons under
-the intro paragraph.
+over the silhouette and can be toggled in any combination from the buttons
+under the intro paragraph — stacking is always skeletal over circulatory
+over nervous.
 
 Also included: a pixel **editor** at `/editor/` (paint/erase/undo, autosave,
 save-to-server) for fine-tuning the silhouette, an anatomy **layer editor**
@@ -39,4 +40,4 @@ Then open http://127.0.0.1:8000/
 - `core/pixelart.py` — procedural art generator (parked anatomy layers)
 - `core/views.py` — routes: `/`, `/editor/`, `/editor/save/`, `/editor/layer/`, `/editor/layer/save/`, `/ascii/`, `/accurate/`
 - `core/templates/core/` — index, editor, layer editor, ascii/accurate test pages
-- `core/static/core/` — CSS and the canvas renderer / toggle logic
+- `core/static/core/` — CSS plus the JS, one labelled file per page: `main.js` (homepage renderer/toggles), `editor.js`, `layer_editor.js`, `ascii.js`

@@ -9,6 +9,8 @@
 </head>
 <body>
   <main class="hero">
+    <!-- stacked canvases: later ones paint on top, so the fixed stacking
+         order is skeletal > circulatory > nervous over the silhouette -->
     <div class="figure" aria-hidden="true">
       <canvas id="layer-silhouette" class="pixel-layer always-on"></canvas>
       <canvas id="layer-nervous" class="pixel-layer" data-layer="nervous"></canvas>
@@ -17,23 +19,15 @@
     </div>
 
     <section class="prose">
-      <p class="greeting">Hi, I&rsquo;m Finn,</p>
-      <p>
-        UK born US based <span class="dim">designer,</span><br>
-        with a background in AI-powered SaaS and<br>
-        agentic systems, <span class="dim">blending AI with</span> thoughtful<br>
-        design to create &amp; ship digital experiences<br>
-        that are <span class="dim">intelligent</span> but
-        <span class="dim">deeply&nbsp;human</span>.
-      </p>
+      <p> this is the prose</p>
 
-      <!-- layer buttons: one overlay at a time, never stacked -->
+      <!-- layer buttons: combine freely, stacking order is always fixed -->
       <div class="controls">
         <button class="toggle toggle-nervous" type="button" data-layer="nervous" aria-pressed="false"><span class="dot"></span>Nervous</button>
         <button class="toggle toggle-circulatory" type="button" data-layer="circulatory" aria-pressed="false"><span class="dot"></span>Circulatory</button>
         <button class="toggle toggle-skeletal" type="button" data-layer="skeletal" aria-pressed="false"><span class="dot"></span>Skeletal</button>
       </div>
-      <p class="hint">One system at a time &mdash; tap again to return to the bare figure.</p>
+      <p class="hint">Combine freely &mdash; they always stack skeleton over circulation over nerves.</p>
     </section>
   </main>
 

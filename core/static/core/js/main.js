@@ -1,5 +1,7 @@
-/* Pixel-anatomy portfolio: render grid layers onto stacked canvases and
- * toggle their visibility from the [data-layer] controls. */
+/* main.js — homepage (/): render the grid layers onto stacked canvases and
+ * toggle their visibility from the [data-layer] buttons. Layers combine
+ * freely; the stacking order is fixed by the canvas order in index.html
+ * (skeletal on top, then circulatory, then nervous, over the silhouette). */
 
 (function () {
   "use strict";
@@ -38,21 +40,22 @@
     }
   });
 
-  // exclusive toggle: clicking a button shows only that layer, and clicking
-  // the active button again returns to the bare silhouette (never stacked)
-  function setActive(name) {
-    document.querySelectorAll("[data-layer]").forEach(function (el) {
-      var on = el.dataset.layer === name;
-      el.classList.toggle("active", on);
-      if (el.tagName === "BUTTON") {
-        el.setAttribute("aria-pressed", on ? "true" : "false");
-      }
-    });
+  // each button toggles its own layer on/off; when several are on they
+  // stack in the fixed canvas order (skeletal > circulatory > nervous)
+  function setLayer(name, on) {
+    document
+      .querySelectorAll('[data-layer="' + name + '"]')
+      .forEach(function (el) {
+        el.classList.toggle("active", on);
+        if (el.tagName === "BUTTON") {
+          el.setAttribute("aria-pressed", on ? "true" : "false");
+        }
+      });
   }
 
   document.querySelectorAll("button[data-layer]").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      setActive(btn.classList.contains("active") ? null : btn.dataset.layer);
+      setLayer(btn.dataset.layer, !btn.classList.contains("active"));
     });
   });
 })();
