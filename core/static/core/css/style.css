@@ -4,6 +4,7 @@
   --dim: #b9b9bd;
   --nervous: #2d4ada;
   --circulatory: #e23a3a;
+  --skeletal: #708090;
 }
 
 * {
@@ -137,7 +138,7 @@ body {
 }
 
 .keyword.active[data-layer="skeletal"] {
-  color: var(--ink);
+  color: var(--skeletal);
 }
 
 .hint {

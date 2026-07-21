@@ -1,8 +1,8 @@
 /* main.js — homepage (/): render the grid layers onto stacked canvases and
  * toggle them from the [data-layer] keywords dimmed inside the prose.
  * Switching a layer on plays a slow themed pixel reveal with a shimmering
- * edge (skeletal scans skull-to-feet, nervous floods down from the brain,
- * circulatory pulses out from the heart); switching it off dissolves the
+ * edge (skeletal rises from the feet up to the skull, nervous floods down
+ * from the brain, circulatory pulses out from the heart); switching it off dissolves the
  * pixels back out. Layers combine freely and always stack in the fixed
  * canvas order (skeletal over circulatory over nervous over the
  * silhouette). Reduced-motion users get the plain CSS fade instead. */
@@ -24,6 +24,10 @@
   var SOFT_PX = 40;       // width of the shimmering edge, in sequence pixels
   // slight stagger, so layers switched on together assemble bottom-up
   var REVEAL_DELAY = { nervous: 0, circulatory: 200, skeletal: 400 };
+
+  var ZOOM_VISIBLE = 2 / 3;   // portion of the figure kept on screen while zoomed
+  var ZOOM_MIN = 1.2;         // least zoom allowed (small screens)
+  var ZOOM_MAX = 3;           // most zoom allowed (tall screens)
 
   var reduceMotion =
     window.matchMedia &&
@@ -86,7 +90,8 @@
   // the reveal sequence for each layer, matching its anatomy
   function orderedPixels(name, pts) {
     if (name === "skeletal") {
-      pts.sort(function (a, b) { return a.y - b.y || a.x - b.x; });
+      // from the ground up: feet first, skull last
+      pts.sort(function (a, b) { return b.y - a.y || a.x - b.x; });
     } else if (name === "nervous") {
       pts.sort(distanceOrder(topSeed(pts)));
     } else if (name === "circulatory") {
@@ -229,10 +234,10 @@
   function targetScale() {
     // offsetTop/offsetHeight ignore CSS transforms, so measuring stays
     // correct even while a zoom transition is playing — every click lands
-    // on the same scale, never a re-zoom
+    // on the same scale, never a re-zoom. Tune via ZOOM_VISIBLE/MIN/MAX.
     var top = figure.offsetTop - window.scrollY;
-    var scale = (window.innerHeight - top) / ((figure.offsetHeight * 2) / 3);
-    return Math.min(Math.max(scale, 1.2), 3);
+    var scale = (window.innerHeight - top) / (figure.offsetHeight * ZOOM_VISIBLE);
+    return Math.min(Math.max(scale, ZOOM_MIN), ZOOM_MAX);
   }
 
   function updateZoom() {
