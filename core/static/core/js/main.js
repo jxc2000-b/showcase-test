@@ -302,9 +302,30 @@
     setMirage(name, on);
   }
 
-  document.querySelectorAll("button[data-layer]").forEach(function (btn) {
+  // sequential unlock: the keywords must be clicked in prose order. Only the
+  // "current" word is interactive — shown dimmed + underlined via .is-current;
+  // clicking it reveals its layer (one-way, no toggling off) and hands the
+  // affordance to the next word. Locked and already-clicked words are disabled.
+  var keywords = [].slice.call(
+    document.querySelectorAll("button.keyword[data-layer]")
+  );
+  var step = 0;   // index of the next keyword allowed to be clicked
+
+  function refreshKeywords() {
+    keywords.forEach(function (btn, i) {
+      btn.classList.toggle("is-current", i === step);
+      btn.disabled = i !== step;   // lock every word except the current one
+    });
+  }
+
+  keywords.forEach(function (btn, i) {
     btn.addEventListener("click", function () {
-      setLayer(btn.dataset.layer, !btn.classList.contains("active"));
+      if (i !== step) return;             // ignore anything but the current word
+      setLayer(btn.dataset.layer, true);  // reveal this layer for good
+      step += 1;                          // advance to the next word
+      refreshKeywords();
     });
   });
+
+  refreshKeywords();
 })();

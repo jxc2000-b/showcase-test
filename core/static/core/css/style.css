@@ -111,24 +111,36 @@ body {
   color: var(--dim);
 }
 
-/* keyword buttons inside the prose mirror the layer state */
+/* keyword buttons inside the prose: a one-way, in-order reveal. A locked word
+   reads as plain prose (no cue); the single "current" word is dimmed and
+   underlined to invite the next click; a word already clicked shows its
+   layer's colour. main.js moves the .is-current marker along the sequence. */
 .keyword {
   appearance: none;
   background: none;
   border: none;
+  border-bottom: 2px solid transparent;
   padding: 0;
   margin: 0;
   font: inherit;
+  color: inherit;          /* locked: blends into the surrounding prose */
+  cursor: default;
+  transition: color 0.3s ease, border-color 0.3s ease;
+}
+
+/* the one word to click now: dimmed + underlined */
+.keyword.is-current {
   color: var(--dim);
+  border-bottom-color: var(--dim);
   cursor: pointer;
-  transition: color 0.3s ease;
-  border-bottom: 2px solid transparent;
 }
 
-.keyword:hover {
+.keyword.is-current:hover {
   color: var(--ink);
+  border-bottom-color: var(--ink);
 }
 
+/* already clicked: reveal the layer's colour */
 .keyword.active[data-layer="nervous"] {
   color: var(--nervous);
 }
@@ -139,6 +151,11 @@ body {
 
 .keyword.active[data-layer="skeletal"] {
   color: var(--skeletal);
+}
+
+/* don't grey out disabled (locked / done) words — keep our own colours */
+.keyword:disabled {
+  opacity: 1;
 }
 
 .hint {
