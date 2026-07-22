@@ -25,7 +25,7 @@
   // slight stagger, so layers switched on together assemble bottom-up
   var REVEAL_DELAY = { nervous: 0, circulatory: 200, skeletal: 400 };
 
-  var ZOOM_VISIBLE = 2 / 3;   // portion of the figure kept on screen while zoomed
+  var ZOOM_VISIBLE = 1.5 / 3;   // portion of the figure kept on screen while zoomed
   var ZOOM_MIN = 1.2;         // least zoom allowed (small screens)
   var ZOOM_MAX = 3;           // most zoom allowed (tall screens)
 
@@ -235,9 +235,15 @@
     // offsetTop/offsetHeight ignore CSS transforms, so measuring stays
     // correct even while a zoom transition is playing — every click lands
     // on the same scale, never a re-zoom. Tune via ZOOM_VISIBLE/MIN/MAX.
+    // Phones (matching the 860px CSS breakpoint) zoom harder: a smaller
+    // visible fraction plus a higher floor crop the figure in more.
+    var mobile = window.matchMedia("(max-width: 860px)").matches;
+    var visible = mobile ? 1 / 3 : ZOOM_VISIBLE;
+    var min = mobile ? 2.2 : ZOOM_MIN;
+    var max = mobile ? 4 : ZOOM_MAX;
     var top = figure.offsetTop - window.scrollY;
-    var scale = (window.innerHeight - top) / (figure.offsetHeight * ZOOM_VISIBLE);
-    return Math.min(Math.max(scale, ZOOM_MIN), ZOOM_MAX);
+    var scale = (window.innerHeight - top) / (figure.offsetHeight * visible);
+    return Math.min(Math.max(scale, min), max);
   }
 
   function updateZoom() {
@@ -249,6 +255,32 @@
   window.addEventListener("resize", function () {
     if (document.querySelector(".pixel-layer.active")) updateZoom();
   });
+
+  // ------------------------------------------------------------- mirage bg
+
+  // the background is a fixed 3x3 grid of image/video slots (rendered
+  // server-side); each keyword layer owns three of them. Toggling a layer
+  // fades its slots in or out in place — the grid shape never changes, so
+  // nothing reflows. For <video> cells only the visible ones decode: play on
+  // show, pause on hide (reduced-motion keeps them paused on their first frame).
+  var mirageGrid = document.getElementById("mirage-grid");
+
+  function setMirage(name, on) {
+    if (!mirageGrid) return;
+    mirageGrid
+      .querySelectorAll('.mirage-cell[data-mirage="' + name + '"]')
+      .forEach(function (cell) {
+        cell.classList.toggle("show", on);
+        if (cell.tagName === "VIDEO") {
+          if (on && !reduceMotion) {
+            var playing = cell.play();
+            if (playing && playing.catch) playing.catch(function () {});
+          } else {
+            cell.pause();
+          }
+        }
+      });
+  }
 
   // ---------------------------------------------------------------- toggle
 
@@ -267,6 +299,7 @@
     if (on) reveal(name);
     else hide(name);
     updateZoom();
+    setMirage(name, on);
   }
 
   document.querySelectorAll("button[data-layer]").forEach(function (btn) {

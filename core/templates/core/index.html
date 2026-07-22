@@ -8,6 +8,23 @@
   <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
 </head>
 <body>
+  <!-- ambient background: a fixed 3x3 grid of image slots behind the figure.
+       Each cell belongs to a keyword layer and starts hidden; clicking a
+       keyword fades its three slots in (and out) in place, so the grid shape
+       never changes. main.js only toggles the .show class. -->
+  <div class="mirage-stage" aria-hidden="true">
+    <div class="mirage-grid" id="mirage-grid">
+      {% for slot in mirage_slots %}
+      {% if slot.video %}
+      <video class="mirage-cell" data-mirage="{{ slot.layer }}" src="{{ slot.url }}"
+             loop muted playsinline preload="metadata"></video>
+      {% else %}
+      <img class="mirage-cell" data-mirage="{{ slot.layer }}" src="{{ slot.url }}" alt="">
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
   <main class="hero">
     <!-- stacked canvases: later ones paint on top, so the fixed stacking
          order is skeletal > circulatory > nervous over the silhouette -->

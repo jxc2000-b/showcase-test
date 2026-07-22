@@ -10,4 +10,6 @@ urlpatterns = [
     path('editor/layer/save/', views.save_layer, name='save-layer'),
     path('ascii/', views.ascii_test, name='ascii-test'),
     path('accurate/', views.accurate_test, name='accurate-test'),
+    path('background/', views.background, name='background'),
+    path('background/img/<int:idx>/', views.background_image, name='background-image'),
 ]

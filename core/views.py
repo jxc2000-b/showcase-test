@@ -3,10 +3,12 @@
 # and decides what to send back to the visitor's browser.
 
 import json
+import mimetypes
 
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import render
+from django.urls import reverse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 
@@ -73,6 +75,7 @@ def index(request):
             layers[name] = rows
     return render(request, 'core/index.html', {
         'layers': layers,
+        'mirage_slots': _mirage_slots(),
     })
 
 
@@ -158,3 +161,93 @@ def accurate_test(request):
         'grid': PNG_GRID,
         'label': 'PNG silhouette · 96×144 · test area',
     })
+
+# The ambient "mirage" page: each button fades one of these images across the
+# whole viewport at low opacity. Files live in core/images/ (not a static dir),
+# so they are streamed by background_image below rather than collected.
+IMAGES_DIR = settings.BASE_DIR / 'core' / 'images'
+# The pool of ambient background images, in a stable order; a URL identifies
+# an image by its index into this tuple. Add files here to grow the pool.
+BACKGROUND_IMAGE_FILES = (
+    'AAAAHHHH.jpeg', 'cutepatootie.jpg', 'fih.jpeg',
+    'hi.jpeg', 'irrelevant.jpeg', 'mewhen.jpeg',
+    'pygmy.jpg', 'sad.png', 'the_left_has_no_response.jpeg',
+)
+
+# Homepage: each keyword layer owns its own three pool images, shown in a
+# fixed 3x3 background grid so toggling a layer never reshapes the grid.
+KEYWORD_IMAGE_SETS = {
+    'nervous': (0, 1, 2),
+    'skeletal': (3, 4, 5),
+    'circulatory': (6, 7, 8),
+}
+
+# The nine slots of that fixed grid (row-major, 0-8). Each keyword owns three,
+# spread one per row and column, so a single active keyword dusts the whole
+# field rather than filling one solid band. Every slot is claimed exactly once.
+KEYWORD_SLOTS = {
+    'nervous':     (0, 4, 8),
+    'skeletal':    (1, 5, 6),
+    'circulatory': (2, 3, 7),
+}
+
+# The /background/ page: each button (key) reveals its own three pool images.
+BACKGROUND_GRIDS = (
+    {'key': 'drift', 'label': 'drift', 'cells': (0, 1, 2)},
+    {'key': 'veil', 'label': 'veil', 'cells': (3, 4, 5)},
+    {'key': 'bloom', 'label': 'bloom', 'cells': (6, 7, 8)},
+)
+
+# Pool files ending in these render as autoplaying <video> cells instead of
+# <img>; anything else (jpeg/jpg/png/gif) stays an <img>. Mixing is fine.
+VIDEO_EXTS = ('.webm', '.mp4')
+# Pin the video mime types so streaming works even where the host's mime
+# registry is bare (FileResponse infers Content-Type from the file name).
+mimetypes.add_type('video/webm', '.webm')
+mimetypes.add_type('video/mp4', '.mp4')
+
+
+def _is_video(filename):
+    return filename.lower().endswith(VIDEO_EXTS)
+
+
+def _media_cell(idx):
+    """A single grid cell: its stream URL and whether it is a video."""
+    return {
+        'url': reverse('background-image', args=[idx]),
+        'video': _is_video(BACKGROUND_IMAGE_FILES[idx]),
+    }
+
+
+def _mirage_slots():
+    """The homepage's fixed 3x3 background grid as an ordered list of nine
+    slots. Each slot names the keyword layer that fills it plus its media cell;
+    toggling a layer fades its slots in and out in place."""
+    placed = {}
+    for layer, positions in KEYWORD_SLOTS.items():
+        for position, img_idx in zip(positions, KEYWORD_IMAGE_SETS[layer]):
+            placed[position] = dict(_media_cell(img_idx), layer=layer)
+    return [placed[i] for i in range(len(placed))]
+
+
+@require_GET
+def background(request):
+    """Ambient 'mirage' page: three buttons, each fading in a 3-image grid."""
+    grids = [
+        {'key': g['key'], 'label': g['label'],
+         'cells': [_media_cell(i) for i in g['cells']]}
+        for g in BACKGROUND_GRIDS
+    ]
+    return render(request, 'core/background.html', {
+        'grids': grids,
+    })
+
+
+@require_GET
+def background_image(request, idx):
+    """Stream one pool item by index; whitelisted, no arbitrary file access.
+    Content type is inferred from the file name (jpeg / jpg / png / webm /
+    mp4 / gif)."""
+    if not 0 <= idx < len(BACKGROUND_IMAGE_FILES):
+        raise Http404('unknown image')
+    return FileResponse(open(IMAGES_DIR / BACKGROUND_IMAGE_FILES[idx], 'rb'))

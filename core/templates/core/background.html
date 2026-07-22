@@ -1,0 +1,38 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bryan</title>
+  <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+</head>
+<body>
+  <main class="hero mirage">
+    <!-- one full-viewport 3-image grid per button, mostly transparent and
+         cross-fading slowly so the active grid reads like a mirage -->
+    <div class="mirage-stage" aria-hidden="true">
+      {% for grid in grids %}
+      <div class="mirage-grid" data-key="{{ grid.key }}">
+        {% for cell in grid.cells %}
+        {% if cell.video %}
+        <video class="mirage-cell" src="{{ cell.url }}" loop muted playsinline preload="metadata"></video>
+        {% else %}
+        <img class="mirage-cell" src="{{ cell.url }}" alt="">
+        {% endif %}
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="mirage-buttons" role="group" aria-label="ambient scenes">
+      {% for grid in grids %}
+      <button class="mirage-btn" type="button"
+              data-key="{{ grid.key }}" aria-pressed="false">{{ grid.label }}</button>
+      {% endfor %}
+    </div>
+  </main>
+
+  <script src="{% static 'core/js/background.js' %}"></script>
+</body>
+</html>
